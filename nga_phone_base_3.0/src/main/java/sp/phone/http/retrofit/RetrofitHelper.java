@@ -3,9 +3,11 @@ package sp.phone.http.retrofit;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.webkit.CookieManager;
 import android.webkit.WebSettings;
 
 import java.net.URLDecoder;
+import java.util.List;
 
 import gov.anzong.androidnga.base.util.ContextUtils;
 import gov.anzong.androidnga.base.util.PreferenceUtils;
@@ -13,13 +15,17 @@ import gov.anzong.androidnga.base.util.StringUtils;
 import gov.anzong.androidnga.base.util.ThreadUtils;
 import gov.anzong.androidnga.common.PreferenceKey;
 import gov.anzong.androidnga.debug.Debugger;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import sp.phone.common.UserManagerImpl;
+import sp.phone.http.cookie.CookieHeaderUtil;
+import sp.phone.http.cookie.NgaCookieStore;
 import sp.phone.http.retrofit.converter.JsonStringConvertFactory;
 import sp.phone.util.ForumUtils;
 import sp.phone.util.NLog;
@@ -98,17 +104,30 @@ public class RetrofitHelper {
         builder.addInterceptor(chain -> {
             Request original = chain.request();
 
-            String cookie = original.header("Cookie");
-            if (cookie == null) {
-                cookie = UserManagerImpl.getInstance().getCookie();
+            HttpUrl url = original.url();
+
+            String explicitCookie = original.header("Cookie");
+            String baseCookie = explicitCookie != null ? explicitCookie : UserManagerImpl.getInstance().getCookie();
+
+            String webViewCookie = null;
+            try {
+                webViewCookie = CookieManager.getInstance().getCookie(url.toString());
+            } catch (Throwable ignored) {
             }
-            Request request = original.newBuilder()
-                    .header("Cookie", cookie)
+
+            String storedCookie = NgaCookieStore.getInstance().getCookieHeader(url);
+            String mergedCookie = CookieHeaderUtil.mergeCookieHeaders(storedCookie, webViewCookie, baseCookie);
+
+            Request.Builder requestBuilder = original.newBuilder()
                     .header("User-Agent", mUserAgent)
                     .header("X-User-Agent", "Nga_Official")
-                    .method(original.method(), original.body())
-                    .build();
-            return chain.proceed(request);
+                    .method(original.method(), original.body());
+            if (!TextUtils.isEmpty(mergedCookie)) {
+                requestBuilder.header("Cookie", mergedCookie);
+            } else {
+                requestBuilder.removeHeader("Cookie");
+            }
+            return chain.proceed(requestBuilder.build());
         });
         builder.addInterceptor(chain -> {
             Request request = chain.request();
@@ -129,6 +148,18 @@ public class RetrofitHelper {
             Request request = chain.request();
             Debugger.collectRequest(request);
             return chain.proceed(request);
+        });
+        builder.addInterceptor(chain -> {
+            Request request = chain.request();
+            Response response = chain.proceed(request);
+            List<String> setCookies = response.headers("Set-Cookie");
+            if (setCookies != null && !setCookies.isEmpty()) {
+                try {
+                    NgaCookieStore.getInstance().saveFromResponse(request.url(), setCookies);
+                } catch (Throwable ignored) {
+                }
+            }
+            return response;
         });
         return builder;
     }

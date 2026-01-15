@@ -90,6 +90,9 @@ class ArticleListModel : BaseModel(), ArticleListContract.Model {
                 NLog.e(TAG, "time = ${System.currentTimeMillis() - time}")
                 if (data == null) {
                     val errorMsg = ErrorConvertFactory.getErrorMessage(s)
+                    if (ErrorConvertFactory.shouldOpenWithWebView(s)) {
+                        throw ServerException(errorMsg ?: "Access blocked; open with built-in browser and retry.")
+                    }
                     if (errorMsg != null) {
                         throw Exception(errorMsg)
                     } else {

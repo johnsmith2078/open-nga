@@ -103,6 +103,7 @@ public class PreferenceKey {
     public static final String PREVIOUS_VERSION_CODE = "previous_version_code";
 
     public static final String KEY_WEBVIEW_DATA_INDEX = "webview_data_index";
+    public static final String KEY_WEBVIEW_COOKIE = "key_webview_cookie";
 
     public static final String KEY_CLEAR_CACHE = "key_clear_cache";
 

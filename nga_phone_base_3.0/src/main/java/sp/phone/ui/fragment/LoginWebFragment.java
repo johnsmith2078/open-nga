@@ -16,8 +16,11 @@ import android.widget.ProgressBar;
 import androidx.annotation.Nullable;
 
 import gov.anzong.androidnga.R;
+import gov.anzong.androidnga.base.util.PreferenceUtils;
 import gov.anzong.androidnga.base.util.ToastUtils;
+import gov.anzong.androidnga.common.PreferenceKey;
 import sp.phone.mvp.presenter.LoginPresenter;
+import sp.phone.util.ForumUtils;
 import sp.phone.util.StringUtils;
 
 /**
@@ -26,7 +29,7 @@ import sp.phone.util.StringUtils;
 
 public class LoginWebFragment extends BaseFragment {
 
-    private static final String URL_LOGIN = "https://ngabbs.com/nuke.php?__lib=login&__act=account&login";
+    private static final String LOGIN_PATH = "/nuke.php?__lib=login&__act=account&login";
 
     private static final int MAX_PROGRESS = 100;
 
@@ -84,14 +87,22 @@ public class LoginWebFragment extends BaseFragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         mWebView = view.findViewById(R.id.webview);
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
         mWebView.setWebChromeClient(new LoginWebChromeClient());
         mWebView.setWebViewClient(new LoginWebViewClient());
         WebSettings webSettings = mWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+        webSettings.setDomStorageEnabled(true);
         mProgressBar = view.findViewById(R.id.progressBar);
         mProgressBar.setMax(MAX_PROGRESS);
-        mWebView.loadUrl(URL_LOGIN);
+        String baseDomain = ForumUtils.getAvailableDomain();
+        baseDomain = baseDomain.replace("\"", "").trim();
+        if (baseDomain.endsWith("/")) {
+            baseDomain = baseDomain.substring(0, baseDomain.length() - 1);
+        }
+        mWebView.loadUrl(baseDomain + LOGIN_PATH);
         super.onViewCreated(view, savedInstanceState);
     }
 
@@ -140,6 +151,9 @@ public class LoginWebFragment extends BaseFragment {
     private void setCookies() {
         String cookieStr = CookieManager.getInstance().getCookie(mWebView.getUrl());
         if (!StringUtils.isEmpty(cookieStr)) {
+            if (cookieStr.contains("ngaPassportUid") && cookieStr.contains("ngaPassportCid")) {
+                PreferenceUtils.putData(PreferenceKey.KEY_WEBVIEW_COOKIE, cookieStr);
+            }
             mLoginPresenter.parseCookie(cookieStr);
 //            Toast.makeText(mActivity, "登陆成功", Toast.LENGTH_SHORT).show();
             if (mActivity != null) {

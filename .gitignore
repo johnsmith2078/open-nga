@@ -3,6 +3,7 @@
 /PinterestLikeAdapterView/bin
 /PinterestLikeAdapterView/gen
 /.gradle
+.gradle_local/
 /.idea
 build
 *.iml

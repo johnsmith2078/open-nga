@@ -148,27 +148,22 @@ public class ForumEmoticonDecoder implements IForumDecoder {
     private static Table<String, String, String> sEmotionTable = HashBasedTable.create();
 
     static {
-        for (int i = 0; i < EMOTICON_URL[1].length; i++) {
-            sEmotionTable.put("ac", EMOTICON_URL[1][i][1], EMOTICON_URL[1][i][2]);
-        }
-
-        for (int i = 0; i < EMOTICON_URL[2].length; i++) {
-            sEmotionTable.put("a2", EMOTICON_URL[2][i][1], EMOTICON_URL[2][i][2]);
-        }
-
-        for (int i = 0; i < EMOTICON_URL[3].length; i++) {
-            sEmotionTable.put("ng", EMOTICON_URL[3][i][1], EMOTICON_URL[3][i][2]);
-        }
-
-        for (int i = 0; i < EMOTICON_URL[4].length; i++) {
-            sEmotionTable.put("pst", EMOTICON_URL[4][i][1], EMOTICON_URL[4][i][1]);
-        }
-        for (int i = 0; i < EMOTICON_URL[5].length; i++) {
-            sEmotionTable.put("dt", EMOTICON_URL[5][i][1], EMOTICON_URL[5][i][2]);
-        }
-
-        for (int i = 0; i < EMOTICON_URL[6].length; i++) {
-            sEmotionTable.put("pg", EMOTICON_URL[6][i][1], EMOTICON_URL[6][i][2]);
+        for (String[][] categoryEmoticons : EMOTICON_URL) {
+            if (categoryEmoticons == null || categoryEmoticons.length == 0) {
+                continue;
+            }
+            for (String[] emoticon : categoryEmoticons) {
+                if (emoticon == null || emoticon.length < 3) {
+                    continue;
+                }
+                String category = emoticon[0];
+                String ubbCode = emoticon[1];
+                String fileName = emoticon[2];
+                if (category == null || ubbCode == null || fileName == null) {
+                    continue;
+                }
+                sEmotionTable.put(category, ubbCode, fileName);
+            }
         }
     }
 
@@ -185,7 +180,10 @@ public class ForumEmoticonDecoder implements IForumDecoder {
                 continue;
             }
             String image = sEmotionTable.get(category, emoticon);
-            String html = category.contains("ac") || category.contains("a2") ? HTML_EMOTICON_ACNIANG : HTML_EMOTICON;
+            if (image == null) {
+                continue;
+            }
+            String html = "ac".equals(category) || "a2".equals(category) ? HTML_EMOTICON_ACNIANG : HTML_EMOTICON;
             content = content.replace(matched, String.format(html, category, image));
         }
         return content;
