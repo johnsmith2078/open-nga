@@ -115,8 +115,16 @@ public class RetrofitHelper {
             } catch (Throwable ignored) {
             }
 
+            String persistedCookie = PreferenceUtils.getData(PreferenceKey.KEY_WEBVIEW_COOKIE, "");
+            if (!TextUtils.isEmpty(persistedCookie)) {
+                String activeUid = UserManagerImpl.getInstance().getUserId();
+                String storedUid = CookieHeaderUtil.parseCookieHeader(persistedCookie).get("ngaPassportUid");
+                if (!TextUtils.isEmpty(activeUid) && !TextUtils.isEmpty(storedUid) && !activeUid.equals(storedUid)) {
+                    persistedCookie = "";
+                }
+            }
             String storedCookie = NgaCookieStore.getInstance().getCookieHeader(url);
-            String mergedCookie = CookieHeaderUtil.mergeCookieHeaders(storedCookie, webViewCookie, baseCookie);
+            String mergedCookie = CookieHeaderUtil.mergeCookieHeaders(storedCookie, baseCookie, persistedCookie, webViewCookie);
 
             Request.Builder requestBuilder = original.newBuilder()
                     .header("User-Agent", mUserAgent)

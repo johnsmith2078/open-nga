@@ -19,6 +19,7 @@ import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.base.util.PreferenceUtils;
 import gov.anzong.androidnga.base.util.ToastUtils;
 import gov.anzong.androidnga.common.PreferenceKey;
+import sp.phone.http.cookie.CookieHeaderUtil;
 import sp.phone.mvp.presenter.LoginPresenter;
 import sp.phone.util.ForumUtils;
 import sp.phone.util.StringUtils;
@@ -89,12 +90,20 @@ public class LoginWebFragment extends BaseFragment {
         mWebView = view.findViewById(R.id.webview);
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            cookieManager.setAcceptThirdPartyCookies(mWebView, true);
+        }
         mWebView.setWebChromeClient(new LoginWebChromeClient());
         mWebView.setWebViewClient(new LoginWebViewClient());
         WebSettings webSettings = mWebView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
         webSettings.setDomStorageEnabled(true);
+        String userAgent = PreferenceUtils.getData(PreferenceKey.USER_AGENT, "");
+        if (StringUtils.isEmpty(userAgent)) {
+            userAgent = WebSettings.getDefaultUserAgent(getContext());
+        }
+        webSettings.setUserAgentString(userAgent);
         mProgressBar = view.findViewById(R.id.progressBar);
         mProgressBar.setMax(MAX_PROGRESS);
         String baseDomain = ForumUtils.getAvailableDomain();
@@ -149,10 +158,20 @@ public class LoginWebFragment extends BaseFragment {
     }
 
     private void setCookies() {
-        String cookieStr = CookieManager.getInstance().getCookie(mWebView.getUrl());
+        String baseDomain = ForumUtils.getAvailableDomain();
+        baseDomain = baseDomain.replace("\"", "").trim();
+        if (baseDomain.endsWith("/")) {
+            baseDomain = baseDomain.substring(0, baseDomain.length() - 1);
+        }
+        String cookieStr = CookieManager.getInstance().getCookie(baseDomain);
+        if (StringUtils.isEmpty(cookieStr)) {
+            cookieStr = CookieManager.getInstance().getCookie(mWebView.getUrl());
+        }
         if (!StringUtils.isEmpty(cookieStr)) {
             if (cookieStr.contains("ngaPassportUid") && cookieStr.contains("ngaPassportCid")) {
-                PreferenceUtils.putData(PreferenceKey.KEY_WEBVIEW_COOKIE, cookieStr);
+                String existing = PreferenceUtils.getData(PreferenceKey.KEY_WEBVIEW_COOKIE, "");
+                String merged = CookieHeaderUtil.mergeCookieHeaders(existing, cookieStr);
+                PreferenceUtils.putData(PreferenceKey.KEY_WEBVIEW_COOKIE, merged);
             }
             mLoginPresenter.parseCookie(cookieStr);
 //            Toast.makeText(mActivity, "登陆成功", Toast.LENGTH_SHORT).show();

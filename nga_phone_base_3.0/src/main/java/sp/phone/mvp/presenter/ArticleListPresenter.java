@@ -1,6 +1,5 @@
 package sp.phone.mvp.presenter;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.ArrayMap;
@@ -11,7 +10,6 @@ import gov.anzong.androidnga.R;
 import gov.anzong.androidnga.Utils;
 import gov.anzong.androidnga.activity.WebViewActivity;
 import gov.anzong.androidnga.base.util.ToastUtils;
-import gov.anzong.androidnga.common.PreferenceKey;
 import gov.anzong.androidnga.http.OnHttpCallBack;
 import sp.phone.common.UserManager;
 import sp.phone.common.UserManagerImpl;
@@ -118,7 +116,7 @@ public class ArticleListPresenter extends BasePresenter<ArticleListFragment, Art
     }
 
     private void showWithWebView() {
-        if (mBaseView == null || !mBaseView.getContext().getSharedPreferences(PreferenceKey.PERFERENCE, Context.MODE_PRIVATE).getBoolean(mBaseView.getString(R.string.pref_show_with_webview), true)) {
+        if (mBaseView == null) {
             return;
         }
         Intent intent = new Intent(mBaseView.getContext(), WebViewActivity.class);

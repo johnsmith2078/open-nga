@@ -21,7 +21,7 @@ public class ErrorConvertFactory {
         } else if (js.contains("无此页")) {
             return ContextUtils.getString(R.string.last_page_prompt);
         } else if (shouldOpenWithWebView(js)) {
-            return "访问被限制（ERROR:15）。请先用内置浏览器打开一次以更新 Cookie，然后再返回应用重试。";
+            return "访问被限制或需要登录。请先用内置浏览器打开一次以更新 Cookie，然后再返回应用重试。";
         } else {
             try {
                 JSONObject obj = (JSONObject) JSON.parse(js);
@@ -41,9 +41,14 @@ public class ErrorConvertFactory {
         return responseBody.contains("ERROR:15")
                 || responseBody.contains("Error:15")
                 || responseBody.contains("error:15")
+                || responseBody.contains("ERROR:1")
+                || responseBody.contains("Error:1")
+                || responseBody.contains("error:1")
+                || responseBody.contains("未登录")
                 || responseBody.contains("访客不能直接访问")
                 || responseBody.contains("游客不能直接访问")
-                || (responseBody.contains("加载中") && responseBody.contains("请稍后") && responseBody.contains("ERROR:15"));
+                || (responseBody.contains("加载中") && responseBody.contains("请稍后") && responseBody.contains("ERROR:15"))
+                || (responseBody.contains("加载中") && responseBody.contains("请稍后") && responseBody.contains("ERROR:1"));
     }
 
     public static String getErrorMessage(Throwable throwable) {

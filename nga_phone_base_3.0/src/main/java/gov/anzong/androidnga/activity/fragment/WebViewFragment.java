@@ -113,6 +113,12 @@ public class WebViewFragment extends BaseFragment {
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                String pageCookie = CookieManager.getInstance().getCookie(url);
+                if (!TextUtils.isEmpty(pageCookie)) {
+                    String existing = PreferenceUtils.getData(PreferenceKey.KEY_WEBVIEW_COOKIE, "");
+                    String merged = CookieHeaderUtil.mergeCookieHeaders(existing, pageCookie);
+                    PreferenceUtils.putData(PreferenceKey.KEY_WEBVIEW_COOKIE, merged);
+                }
                 setTitle(view.getTitle());
                 super.onPageFinished(view, url);
             }
@@ -210,8 +216,8 @@ public class WebViewFragment extends BaseFragment {
         }
         String userCookie = UserManagerImpl.getInstance().getCookie();
         Map<String, String> baseCookies = new LinkedHashMap<>();
-        mergeCookies(baseCookies, storedCookie);
         mergeCookies(baseCookies, userCookie);
+        mergeCookies(baseCookies, storedCookie);
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
